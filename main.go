@@ -7,6 +7,14 @@ import (
 	"sync/atomic"
 )
 
+const metricsHTML = `
+	<html>
+		<body>
+			<h1>Welcome, Chirpy Admin</h1>
+			<p>Chirpy has been visited %d times!</p>
+		</body>
+	</html>`
+
 type apiConfig struct {
 	fileserverHits atomic.Int32
 }
@@ -21,8 +29,8 @@ func main() {
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/app/", apiCfg.metricsMiddleware( http.StripPrefix("/app", http.FileServer(http.Dir(path)))))
 	serveMux.HandleFunc("GET /api/healthz", readiness)
-	serveMux.HandleFunc("GET /api/metrics", apiCfg.metricsHandler)
-	serveMux.HandleFunc("POST /api/reset", apiCfg.resetHandler)
+	serveMux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
+	serveMux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 
 	server := &http.Server{
 		Addr: port,
@@ -36,9 +44,9 @@ func main() {
 }
 
 func (cfg *apiConfig) metricsHandler(writer http.ResponseWriter, req *http.Request) {
-	writer.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	writer.Header().Add("Content-Type", "text/html; charset=utf-8")
 	writer.WriteHeader(http.StatusOK)
-	writer.Write([]byte(fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())))
+	writer.Write([]byte(fmt.Sprintf(metricsHTML, cfg.fileserverHits.Load())))
 }
 
 func (cfg *apiConfig) metricsMiddleware(next http.Handler) http.Handler {
