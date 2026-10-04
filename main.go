@@ -1,19 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"sync/atomic"
 )
-
-const metricsHTML = `
-	<html>
-		<body>
-			<h1>Welcome, Chirpy Admin</h1>
-			<p>Chirpy has been visited %d times!</p>
-		</body>
-	</html>`
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
@@ -28,9 +19,10 @@ func main() {
 	}
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/app/", apiCfg.metricsMiddleware( http.StripPrefix("/app", http.FileServer(http.Dir(path)))))
-	serveMux.HandleFunc("GET /api/healthz", readiness)
+	serveMux.HandleFunc("GET /api/healthz", readinessHandler)
 	serveMux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 	serveMux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
+	serveMux.HandleFunc("POST /api/validate_chirp", validationHandler)
 
 	server := &http.Server{
 		Addr: port,
@@ -41,17 +33,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func (cfg *apiConfig) metricsHandler(writer http.ResponseWriter, req *http.Request) {
-	writer.Header().Add("Content-Type", "text/html; charset=utf-8")
-	writer.WriteHeader(http.StatusOK)
-	writer.Write([]byte(fmt.Sprintf(metricsHTML, cfg.fileserverHits.Load())))
-}
-
-func (cfg *apiConfig) metricsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
-		cfg.fileserverHits.Add(1)
-		next.ServeHTTP(writer, req)
-	})
 }
