@@ -14,7 +14,8 @@ import (
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
-	*database.Queries
+	db *database.Queries
+	platform string
 }
 
 func main() {
@@ -27,6 +28,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not load database: %v", err)
 	}
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
+	}
 	dbQueries := database.New(db)
 
 	const path = "."
@@ -34,7 +39,8 @@ func main() {
 
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
-		Queries: dbQueries,
+		db: dbQueries,
+		platform: platform,
 	}
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/app/", apiCfg.metricsMiddleware( http.StripPrefix("/app", http.FileServer(http.Dir(path)))))
@@ -42,6 +48,7 @@ func main() {
 	serveMux.HandleFunc("GET /admin/metrics", apiCfg.metricsHandler)
 	serveMux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
 	serveMux.HandleFunc("POST /api/validate_chirp", validationHandler)
+	serveMux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
 
 	server := &http.Server{
 		Addr: port,
