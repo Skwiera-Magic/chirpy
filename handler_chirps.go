@@ -84,3 +84,24 @@ func cleanBody(body string, profanities map[string]struct{}) string {
 	cleaned := strings.Join(words, " ")
 	return cleaned
 }
+
+func (cfg *apiConfig) getChirps(writer http.ResponseWriter, req *http.Request) {
+	chirpsDB, err := cfg.db.GetChirps(req.Context())
+	if err != nil {
+		respondWithError(writer, http.StatusInternalServerError, "could not retreive chirps", err)
+		return
+	}
+
+	chirps := []Chirp{}
+	for _, chirp := range chirpsDB {
+		chirps = append(chirps, Chirp{
+			ID: chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			UserID: chirp.UserID,
+			Body: chirp.Body,
+		})
+	}
+
+	respondWithJson(writer, http.StatusOK, chirps)
+}
