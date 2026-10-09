@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Skwiera-Magic/chirpy/internal/auth"
+	"github.com/Skwiera-Magic/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
@@ -14,11 +16,13 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
+	Password  string    `json:"-"` 
 }
 
 func (cfg *apiConfig) createUserHandler(writer http.ResponseWriter, req *http.Request) {
 	type parameters struct {
-		Email string `json:"email"`
+		Email 	 string `json:"email"`
+		Password string `json:"password"`
 	}
 	type response struct {
 		User
@@ -32,7 +36,16 @@ func (cfg *apiConfig) createUserHandler(writer http.ResponseWriter, req *http.Re
 		return
 	}
 
-	user, err := cfg.db.CreateUser(req.Context(), params.Email)
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		respondWithError(writer, http.StatusInternalServerError, "Password could not be hashed", err)
+		return
+	}
+
+	user, err := cfg.db.CreateUser(req.Context(), database.CreateUserParams{
+		Email: params.Email,
+		HashedPassword: hashedPassword,
+	})
 	if err != nil {
 		respondWithError(writer, http.StatusInternalServerError, "could not create user", err)
 		return
