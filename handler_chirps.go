@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Skwiera-Magic/chirpy/internal/auth"
 	"github.com/Skwiera-Magic/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -22,12 +23,22 @@ type Chirp struct {
 func (cfg *apiConfig) createChirpHandler(writer http.ResponseWriter, req *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+	}
+
+	token, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		respondWithError(writer, http.StatusUnauthorized, "could not find JWT", err)
+		return
+	}
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(writer, http.StatusUnauthorized, "could not validate JWT", err)
+		return
 	}
 
 	decoder := json.NewDecoder(req.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(writer, http.StatusBadRequest, "could not decode parameters", err)
 		return
@@ -41,7 +52,7 @@ func (cfg *apiConfig) createChirpHandler(writer http.ResponseWriter, req *http.R
 
 	chirp, err := cfg.db.CreateChirp(req.Context(), database.CreateChirpParams{
 		Body: cleaned,
-		UserID: params.UserID,
+		UserID: userID,
 	})
 
 	if err != nil {
