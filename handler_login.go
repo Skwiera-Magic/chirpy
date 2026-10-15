@@ -9,7 +9,7 @@ import (
 	"github.com/Skwiera-Magic/chirpy/internal/database"
 )
 
-func (cfg *apiConfig) handlerLogin(writer http.ResponseWriter, req *http.Request) {
+func (cfg *apiConfig) loginHandler(writer http.ResponseWriter, req *http.Request) {
 	type parameters struct {
 		Email string `json:"email"`
 		Password string `json:"password"`
