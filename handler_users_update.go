@@ -54,10 +54,11 @@ func (cfg *apiConfig) usersUpdateHandler(writer http.ResponseWriter, req *http.R
 
 	respondWithJson(writer, http.StatusOK, response{
 		User: User{
-			ID: user.ID,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email: user.Email,
+			ID: 			user.ID,
+			CreatedAt: 		user.CreatedAt,
+			UpdatedAt:		user.UpdatedAt,
+			Email: 			user.Email,
+			IsChirpyRed: 	user.IsChirpyRed,
 		},
 	})
 }
