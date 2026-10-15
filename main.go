@@ -64,6 +64,8 @@ func main() {
 
 	serveMux.HandleFunc("PUT /api/users", apiCfg.usersUpdateHandler)
 
+	serveMux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.chirpDeleteHandler)
+
 	server := &http.Server{
 		Addr: port,
 		Handler: serveMux,
