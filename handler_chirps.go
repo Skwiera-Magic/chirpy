@@ -97,7 +97,19 @@ func cleanBody(body string, profanities map[string]struct{}) string {
 }
 
 func (cfg *apiConfig) getChirps(writer http.ResponseWriter, req *http.Request) {
-	chirpsDB, err := cfg.db.GetChirps(req.Context())
+	authorID, err := getAuthorID(req)
+	if err != nil {
+		respondWithError(writer, http.StatusBadRequest, "invalid author ID", err)
+		return
+	}
+
+	var chirpsDB []database.Chirp
+
+	if authorID != uuid.Nil {
+		chirpsDB, err = cfg.db.GetChirpsByAuthor(req.Context(), authorID)
+	} else {
+		chirpsDB, err = cfg.db.GetChirps(req.Context())
+	}
 	if err != nil {
 		respondWithError(writer, http.StatusInternalServerError, "could not retreive chirps", err)
 		return
@@ -138,4 +150,16 @@ func (cfg *apiConfig) getChirpByID(writer http.ResponseWriter, req *http.Request
 		UserID: chirpByID.UserID,
 		Body: chirpByID.Body,
 	})
+}
+
+func getAuthorID(req *http.Request) (uuid.UUID, error) {
+	authorIDString := req.URL.Query().Get("author_id")
+	if authorIDString == "" {
+		return uuid.Nil, nil
+	}
+	authorID, err := uuid.Parse(authorIDString)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return authorID, nil
 }
