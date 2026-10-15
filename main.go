@@ -17,6 +17,7 @@ type apiConfig struct {
 	db *database.Queries
 	platform string
 	jwtSecret string
+	polka string
 }
 
 func main() {
@@ -37,6 +38,11 @@ func main() {
 	if jwtSecret == "" {
 		log.Fatal("JWT_SECRET env is not set")
 	}
+	polka := os.Getenv("POLKA_KEY")
+	if polka == "" {
+		log.Fatal("POLKA_KEY is not set")
+	}
+	
 	dbQueries := database.New(db)
 
 	const path = "."
@@ -47,6 +53,7 @@ func main() {
 		db: dbQueries,
 		platform: platform,
 		jwtSecret: jwtSecret,
+		polka: polka,
 	}
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/app/", apiCfg.metricsMiddleware( http.StripPrefix("/app", http.FileServer(http.Dir(path)))))

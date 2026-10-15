@@ -18,7 +18,7 @@ type TokenType string
 
 const TokenTypeAccess TokenType = "chirpy-access"
 
-var NoAuth = errors.New("no auth included in request")
+var ErrNoAuth = errors.New("no auth included in request")
 
 func HashPassword(password string) (string, error) {
 	hash, err := argon2id.CreateHash(password, argon2id.DefaultParams)
@@ -81,7 +81,7 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 func GetBearerToken(headers http.Header) (string, error) {
 	auth := headers.Get("Authorization")
 	if auth == "" {
-		return "", NoAuth
+		return "", ErrNoAuth
 	}
 	authSplit := strings.Split(auth, " ")
 	if len(authSplit) < 2 || authSplit[0] != "Bearer" {
@@ -95,4 +95,17 @@ func MakeRefreshToken() string {
 	token := make([]byte, 32)
 	rand.Read(token)
 	return hex.EncodeToString(token)
+}
+
+func GetAPIKey(headers http.Header) (string, error) {
+	apiKey := headers.Get("Authorization")
+	if apiKey == "" {
+		return "", ErrNoAuth
+	}
+	apiKeySplit := strings.Split(apiKey, " ")
+	if len(apiKeySplit) <2 || apiKeySplit[0] != "ApiKey" {
+		return "", errors.New("ApiKey not found")
+	}
+
+	return apiKeySplit[1], nil
 }

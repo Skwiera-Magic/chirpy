@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/Skwiera-Magic/chirpy/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -15,11 +16,21 @@ func (cfg *apiConfig) webhookHandler(writer http.ResponseWriter, req *http.Reque
 		Data struct {
 			UserID uuid.UUID `json:"user_id"`
 		}
+	}	
+
+	apiKey, err := auth.GetAPIKey(req.Header)
+	if err != nil {
+		respondWithError(writer, http.StatusUnauthorized, "could not get api key", err)
+		return
+	}
+	if apiKey != cfg.polka {
+		respondWithError(writer, http.StatusUnauthorized, "api key is not valid", nil)
+		return
 	}
 
 	decoder := json.NewDecoder(req.Body)
 	params := parametres{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		respondWithError(writer, http.StatusInternalServerError, "could not decode parameters", err)
 		return
